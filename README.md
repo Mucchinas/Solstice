@@ -1,105 +1,130 @@
-# Summertime Framework
+# Summertime Framework Documentation
 
-**Summertime** is a minimalist, space-themed web framework for Java, designed for simplicity, speed, and **full retrocompatibility with Java 8**. It provides a lightweight alternative to heavy frameworks, utilizing a unique celestial nomenclature for its components.
+Summertime is a minimalist web framework for Java 8+ designed with a celestial metaphor. It provides automated dependency injection, configuration management, and a lightweight web server.
 
-## Key Features
+## Core Architecture
 
-- **Java 8+ Compatible**: Works on older environments while supporting modern development patterns.
-- **Minimalist Footprint**: Built on top of the native `com.sun.net.httpserver` and `Gson`.
-- **Annotation-Driven**: Clean and intuitive API using space-inspired decorators.
-- **Dependency Injection**: Automated "Orbiting" (DI) for singleton components.
-- **JSON Ready**: Built-in support for JSON request/response serialization.
+The framework operates on a singleton-based container. It scans the base package of the application to identify and manage celestial bodies.
 
----
+### Component Management
 
-## The Celestial Metaphors (Core Concepts)
-
-Summertime uses a space-themed vocabulary to describe its components:
-
-| Term | Annotation | Description |
-| :--- | :--- | :--- |
-| **Star** | `@Star` | A standard component or service (Singleton Bean). |
-| **Quasar** | `@Quasar` | A web controller that exposes endpoints to the "galaxy" (network). |
-| **Orbit** | `@Orbit` | Marks a field for Dependency Injection. The framework "orbits" the dependency into the star. |
-| **Chart** | `@GetChart` / `@PostChart` | A route definition mapping a path to a specific method. |
-| **Traveler** | `@ChartTraveler` | The request body payload traveling through the network (parsed from JSON). |
-| **Spec** | `@ChartSpec` | A specific parameter (query parameter) required for the chart. |
-| **Charter** | — | The internal engine that manages routes and navigates HTTP traffic. |
-
----
-
-## Getting Started
-
-### 1. Initialize the Universe
-To start your application, simply call `Summertime.run()` passing your main class. This triggers classpath scanning and starts the server on port `8080`.
-
-```java
-public class Main {
-    public static void main(String[] args) {
-        Summertime.run(Main.class);
-    }
-}
-```
-
-### 2. Create a Star (Service)
-Define your business logic in a class annotated with `@Star`.
+- **@Star**: Defines a managed singleton component. Any class marked with this annotation is instantiated during startup.
+- **@Quasar**: A specialized Star that acts as a web controller. Only methods within a Quasar can be mapped to web routes.
+- **@Constellation**: A configuration class. It is itself a Star and can contain factory methods to produce other stars.
 
 ```java
 @Star
-public class ExplorationService {
-    public String getStatus() {
-        return "All systems nominal.";
+class ScienceModule {} // Managed singleton
+```
+
+### Dependency Injection (Orbiting)
+
+The framework performs automated wiring of dependencies using the **@Orbit** annotation. It supports injection into both managed beans and external instances via `Summertime.inject(Object)`.
+
+- **Field Injection**: Injecting a managed bean into another.
+- **External Injection**: Injecting managed beans into instances created outside the framework.
+
+```java
+@Star
+class NavigationSystem {
+    @Orbit
+    private ScienceModule module; // Wired automatically
+}
+```
+
+### Configuration and Properties (Stardust)
+
+Summertime includes a property management system that automatically loads `summertime.properties` from the classpath.
+
+- **@Stardust**: Injects values from properties files into fields.
+- **Type Conversion**: The framework has a built-in conversion service that automatically converts string properties into primitive types (int, long, boolean, double) and their wrappers.
+
+```java
+@Star
+class Engine {
+    @Stardust("engine.thrust")
+    private int thrust; // Converted from string to int
+}
+```
+
+### Factory Methods (Starsigns)
+
+When a component cannot be instantiated via a default constructor or requires complex setup, use a **Constellation**.
+
+- **@Starsign**: Marks a method within a Constellation as a factory. The return type of the method is registered as a managed Star.
+
+```java
+@Constellation
+class SystemConfig {
+    @Starsign
+    public HttpClient getClient() {
+        return HttpClient.newBuilder().build(); // Registered as a Star
     }
 }
 ```
 
-### 3. Create a Quasar (Controller)
-Expose endpoints by annotating a class with `@Quasar`. Use `@Orbit` to inject your stars.
+## Web Engine
+
+The web server is built on the native JDK HttpServer and runs by default on port 8080 (configurable via `server.port`).
+
+### Route Mapping
+
+Endpoints are defined using method-level annotations within a Quasar.
+
+- **@GetChart(path)**: Maps an HTTP GET request to the method.
+- **@PostChart(path)**: Maps an HTTP POST request to the method.
+
+### Parameter Resolution
+
+Method arguments are resolved dynamically using specialized annotations:
+
+- **@ChartSpec(name)**: Binds a query parameter from the URL. Supports automatic type conversion.
+- **@ChartTraveler**: Binds the request body. The framework expects JSON and deserializes it into the parameter type using GSON.
 
 ```java
 @Quasar
-public class MissionController {
-
-    @Orbit
-    private ExplorationService service;
-
-    // GET Request with Query Parameter
-    @GetChart(path = "/mission/status")
-    public String checkStatus(@ChartSpec("id") String missionId) {
-        return "Mission " + missionId + ": " + service.getStatus();
+class CommunicationBridge {
+    @GetChart(path = "/ping")
+    public String ping(@ChartSpec("id") int id) {
+        return "Pong: " + id;
     }
 
-    // POST Request with JSON Body
-    @PostChart(path = "/mission/launch")
-    public LaunchResult launch(@ChartTraveler LaunchData data) {
-        // data is automatically parsed from JSON
-        return new LaunchResult("Launched " + data.getRocketName());
+    @PostChart(path = "/message")
+    public Response send(@ChartTraveler Message msg) {
+        return new Response("Received: " + msg.content); // Serialized to JSON
     }
 }
 ```
 
----
+### Response Handling
 
-## Networking & Parameters
+- **String**: Returned as `text/plain`.
+- **Objects**: Automatically serialized to JSON with `application/json` content type.
 
-- **JSON Support**: Methods returning objects (other than `String`) are automatically serialized to JSON.
-- **Query Parameters**: Use `@ChartSpec("name")` to bind query string values to method arguments.
-- **Request Body**: Use `@ChartTraveler` to bind the incoming JSON body to a POJO.
-- **Customization**: The server currently orbits on port `8080` by default.
+## Technical Initialization
 
----
+To start the framework, invoke the `run` method from the main entry point. This method bootstraps the application and returns a `Summertime` instance, which can be used for programmatic access to beans or to shut down the application.
 
-## Technical Architecture
+```java
+public class Application {
+    public static void main(String[] args) {
+        Summertime app = Summertime.run(Application.class);
 
-- **Classpath Scanning**: Powered by [ClassGraph](https://github.com/classgraph/classgraph) for efficient discovery of celestial bodies.
-- **JSON Parsing**: Powered by [Gson](https://github.com/google/gson).
-- **HTTP Engine**: Utilizes the robust, native `HttpServer` included in the JDK.
+        // The application is now running.
+        // To stop it gracefully:
+        // app.stop();
+    }
+}
+```
 
-## Requirements
+## Configuration (summertime.properties)
 
-- **Java 8** or higher.
-- **Maven** (for dependency management).
+Standard configuration keys:
+- `server.port`: The port for the web server (default: 8080).
+- Custom keys for use with `@Stardust`.
 
----
-
-Enjoy the warmth of a simpler development experience with Summertime.
+```properties
+server.port=9000
+galaxy.name=Andromeda
+number.int=42
+```

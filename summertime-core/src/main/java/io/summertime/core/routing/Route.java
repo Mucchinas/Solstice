@@ -1,4 +1,4 @@
-package io.summertime.core;
+package io.summertime.core.routing;
 
 import java.lang.reflect.Method;
 

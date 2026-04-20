@@ -1,129 +1,87 @@
 package io.summertime.core;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ScanResult;
-import io.summertime.annotations.*;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.*;
+import io.summertime.core.common.Logger;
+import io.summertime.core.convert.ConversionService;
+import io.summertime.core.di.ApplicationContext;
+import io.summertime.core.di.ComponentScanner;
+import io.summertime.core.di.DependencyInjector;
+import io.summertime.core.props.PropertyResolver;
+import io.summertime.core.routing.Router;
+import io.summertime.core.server.ArgumentResolver;
+import io.summertime.core.server.RequestHandler;
+import io.summertime.core.server.WebServer;
 
 public class Summertime {
 
-    private static final Map<Class<?>, Object> context = new HashMap<>();
+    private final ApplicationContext context;
+    private final DependencyInjector injector;
+    private final WebServer webServer;
 
-    public static void run(Class<?> mainClass) {
-        System.out.println("Summertime is rising...");
-        Observatory.load(); // summertime.properties
+    private Summertime(Class<?> mainClass) {
+        Logger.info("Summertime is rising...");
 
+        // 1. Core Services Initialization
+        this.context = new ApplicationContext();
+        PropertyResolver propertyResolver = new PropertyResolver();
+        ConversionService conversionService = new ConversionService();
+        this.context.registerBean(PropertyResolver.class, propertyResolver);
+        this.context.registerBean(ConversionService.class, conversionService);
+        this.context.registerBean(ApplicationContext.class, context);
+
+        // 2. Component Scanning
+        ComponentScanner scanner = new ComponentScanner(context);
+        scanner.scanAndInstantiate(mainClass.getPackage().getName());
+
+        // 3. Dependency Injection
+        this.injector = new DependencyInjector(context, propertyResolver, conversionService);
+        this.injector.processConstellations();
+        this.injector.performWiring();
+
+        Logger.info("Summertime started! Celestial bodies in orbit: " + context.getAllBeans().size());
+
+        // 4. Launch Web Server
+        this.webServer = launchWebServer();
+        this.webServer.start();
+    }
+
+    public static Summertime run(Class<?> mainClass) {
         try {
-            // 1. Scan @Star @Constellation
-            scanAndInstantiate(mainClass);
-
-            // 2. @Starsign @Constellation
-            processConstellations();
-
-            // 3. @Orbit @Stardust
-            performWiring();
-
-            System.out.println("Summertime started! Celestial bodies in orbit: " + context.size());
-
-            // 4. Charter (Server)
-            launchCharter();
-
+            return new Summertime(mainClass);
         } catch (Exception e) {
+            Logger.error("Summertime failed to reach orbit", e);
             throw new RuntimeException("Summertime failed to reach orbit", e);
         }
     }
 
-    private static void scanAndInstantiate(Class<?> mainClass) throws Exception {
-        String packageToScan = mainClass.getPackage().getName();
-        try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packageToScan).scan()) {
-            List<Class<?>> componentClasses = scanResult.getClassesWithAnnotation(Star.class.getName()).loadClasses();
-
-            for (Class<?> clazz : componentClasses) {
-                if (clazz.isAnnotation() || clazz.isInterface()) continue;
-
-                Constructor<?> constructor = clazz.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                context.put(clazz, constructor.newInstance());
-            }
-        }
-    }
-
-    private static void processConstellations() {
-
-        for (Object bean : new ArrayList<>(context.values())) {
-            if (bean.getClass().isAnnotationPresent(Constellation.class)) {
-                for (Method method : bean.getClass().getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Starsign.class)) {
-                        try {
-                            method.setAccessible(true);
-                            Object produced = method.invoke(bean);
-
-                            context.put(method.getReturnType(), produced);
-                            System.out.println("Starsign registered: " + method.getReturnType().getSimpleName());
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to produce Star from @Starsign: " + method.getName(), e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void performWiring() {
-        for (Object bean : context.values()) {
-            inject(bean);
-        }
-    }
-
-    /**
-     * Inietta dipendenze in un'istanza (gestita o esterna).
-     * Gestisce sia @Orbit che @Stardust con conversione dei tipi.
-     */
-    public static void inject(Object instance) {
-        for (Field field : instance.getClass().getDeclaredFields()) {
-            try {
-                // @Orbit (Dependency Injection)
-                if (field.isAnnotationPresent(Orbit.class)) {
-                    Object dependency = context.get(field.getType());
-                    if (dependency != null) {
-                        field.setAccessible(true);
-                        field.set(instance, dependency);
-                    } else {
-                        System.err.println("Warning: Could not orbit " + field.getType().getSimpleName() + " into " + instance.getClass().getSimpleName());
-                    }
-                }
-
-                // @Stardust (Properties Injection con conversione)
-                if (field.isAnnotationPresent(Stardust.class)) {
-                    String key = field.getAnnotation(Stardust.class).value();
-                    String rawValue = Observatory.get(key, null);
-
-                    if (rawValue != null) {
-                        Object convertedValue = SpaceConverter.convert(field.getType(), rawValue);
-                        field.setAccessible(true);
-                        field.set(instance, convertedValue);
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to inject into field: " + field.getName(), e);
-            }
-        }
-    }
-
-    private static void launchCharter() {
+    private WebServer launchWebServer() {
         try {
-            int port = Observatory.getInt("server.port", 8080);
-            Charter.start(port, context);
+            PropertyResolver props = context.getBean(PropertyResolver.class);
+            ConversionService conversionService = context.getBean(ConversionService.class);
+
+            Router router = new Router(context);
+            ArgumentResolver argumentResolver = new ArgumentResolver(conversionService);
+            RequestHandler requestHandler = new RequestHandler(router, argumentResolver);
+
+            int port = props.getIntProperty("server.port", 8080);
+            return new WebServer(port, requestHandler);
         } catch (Exception e) {
-            throw new RuntimeException("Charter collision: failed to start server", e);
+            Logger.error("Web server failed to start", e);
+            throw new RuntimeException("Web server failed to start", e);
         }
     }
 
-    public static <T> T getBean(Class<T> clazz) {
-        return clazz.cast(context.get(clazz));
+    public <T> T getBean(Class<T> clazz) {
+        return context.getBean(clazz);
+    }
+
+    public void inject(Object instance) {
+        injector.inject(instance);
+    }
+
+    public void stop() {
+        if (webServer != null) {
+            webServer.stop();
+        }
+        Logger.info("Summertime has set.");
     }
 }
