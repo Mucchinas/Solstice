@@ -1,6 +1,6 @@
 # Summertime Framework Documentation
 
-Summertime is a minimalist web framework for Java 8+ designed with a celestial metaphor. It provides automated dependency injection, configuration management, and a lightweight web server.
+Summertime is a minimalist web framework for Java 8+ with an astral twist. It provides automated dependency injection, configuration management, and a lightweight web server.
 
 ## Core Architecture
 
