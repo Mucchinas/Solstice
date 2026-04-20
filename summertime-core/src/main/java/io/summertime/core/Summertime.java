@@ -18,7 +18,7 @@ public class Summertime {
     private final WebServer webServer;
 
     private Summertime(Class<?> mainClass) {
-        Logger.info("Summertime is rising...");
+        Logger.info("Summertime is condensing...");
 
         // 1. Core Services Initialization
         this.context = new ApplicationContext();
@@ -37,7 +37,7 @@ public class Summertime {
         this.injector.processConstellations();
         this.injector.performWiring();
 
-        Logger.info("Summertime started! Celestial bodies in orbit: " + context.getAllBeans().size());
+        Logger.info("Summertime genesis completed! Celestial Bodies in orbit: " + context.getAllBeans().size());
 
         // 4. Launch Web Server
         this.webServer = launchWebServer();
@@ -82,6 +82,6 @@ public class Summertime {
         if (webServer != null) {
             webServer.stop();
         }
-        Logger.info("Summertime has set.");
+        Logger.info("Summertime dissolved.");
     }
 }

@@ -19,7 +19,7 @@ public class ComponentScanner {
     }
 
     public void scanAndInstantiate(String basePackage) {
-        Logger.info("Scanning for components in package: " + basePackage);
+        Logger.info("Scanning for Celestial Bodies in package: " + basePackage);
         try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(basePackage).scan()) {
             Set<Class<?>> componentClasses = new HashSet<>();
             componentClasses.addAll(scanResult.getClassesWithAnnotation(Star.class.getName()).loadClasses());

@@ -43,7 +43,7 @@ public class Router {
     private void addRoute(String pathTemplate, String httpMethod, Method method, Object bean) {
         Route route = new Route(pathTemplate, httpMethod, method, bean);
         routes.add(route);
-        Logger.info("Mapped route: [" + httpMethod + "] " + pathTemplate);
+        Logger.info("Mapped Chart: [" + httpMethod + "] " + pathTemplate);
     }
 
     public Optional<RouteMatch> findRoute(String path, String httpMethod) {

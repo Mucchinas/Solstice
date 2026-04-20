@@ -33,7 +33,7 @@ public class DependencyInjector {
                             method.setAccessible(true);
                             Object produced = method.invoke(bean);
                             context.registerBean(method.getReturnType(), produced);
-                            Logger.info("Starsign registered: " + method.getReturnType().getSimpleName());
+                            Logger.info("Registered Starsign: " + method.getReturnType().getSimpleName());
                         } catch (Exception e) {
                             Logger.error("Failed to produce Star from @Starsign: " + method.getName(), e);
                             throw new RuntimeException("Failed to produce Star from @Starsign: " + method.getName(), e);
