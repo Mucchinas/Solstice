@@ -2,8 +2,9 @@ package io.summertime.core.server;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import io.summertime.core.routing.Route;
 import io.summertime.core.common.Logger;
+import io.summertime.core.routing.Route;
+import io.summertime.core.routing.RouteMatch;
 import io.summertime.core.routing.Router;
 
 import java.io.IOException;
@@ -27,9 +28,10 @@ public class RequestHandler {
             String method = exchange.getRequestMethod();
 
             router.findRoute(path, method)
-                    .ifPresentOrElse(route -> {
+                    .ifPresentOrElse(routeMatch -> {
                         try {
-                            Object[] args = argumentResolver.resolveArguments(exchange, route.getMethod());
+                            Route route = routeMatch.getRoute();
+                            Object[] args = argumentResolver.resolveArguments(exchange, route.getMethod(), routeMatch);
                             Object result = route.getMethod().invoke(route.getBean(), args);
                             sendResponse(exchange, result);
                         } catch (Exception e) {

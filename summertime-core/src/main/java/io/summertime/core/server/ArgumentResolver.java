@@ -2,9 +2,11 @@ package io.summertime.core.server;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
+import io.summertime.annotations.ChartParam;
 import io.summertime.annotations.ChartSpec;
 import io.summertime.annotations.ChartTraveler;
 import io.summertime.core.convert.ConversionService;
+import io.summertime.core.routing.RouteMatch;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,20 +28,28 @@ public class ArgumentResolver {
         this.conversionService = conversionService;
     }
 
-    public Object[] resolveArguments(HttpExchange exchange, Method method) throws IOException {
+    public Object[] resolveArguments(HttpExchange exchange, Method method, RouteMatch routeMatch) throws IOException {
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
         Map<String, String> queryParams = parseQuery(exchange.getRequestURI().getRawQuery());
+        Map<String, String> pathVariables = routeMatch.getPathVariables();
 
         for (int i = 0; i < parameters.length; i++) {
             Parameter p = parameters[i];
 
-            if (p.isAnnotationPresent(ChartSpec.class)) {
+            if (p.isAnnotationPresent(ChartParam.class)) {
+                String paramName = p.getAnnotation(ChartParam.class).value();
+                String rawValue = pathVariables.get(paramName);
+                if (rawValue != null) {
+                    args[i] = conversionService.convert(rawValue, p.getType())
+                            .orElseThrow(() -> new IllegalArgumentException("Cannot convert path param '" + paramName + "' to " + p.getType()));
+                }
+            } else if (p.isAnnotationPresent(ChartSpec.class)) {
                 String paramName = p.getAnnotation(ChartSpec.class).value();
                 String rawValue = queryParams.get(paramName);
                 if (rawValue != null) {
                     args[i] = conversionService.convert(rawValue, p.getType())
-                            .orElseThrow(() -> new IllegalArgumentException("Cannot convert value for param " + paramName));
+                            .orElseThrow(() -> new IllegalArgumentException("Cannot convert query param '" + paramName + "' to " + p.getType()));
                 }
             } else if (p.isAnnotationPresent(ChartTraveler.class)) {
                 InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);

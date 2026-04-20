@@ -78,15 +78,21 @@ Endpoints are defined using method-level annotations within a Quasar.
 
 Method arguments are resolved dynamically using specialized annotations:
 
+- **@ChartParam(name)**: Binds a path variable from the URL. Supports automatic type conversion.
 - **@ChartSpec(name)**: Binds a query parameter from the URL. Supports automatic type conversion.
 - **@ChartTraveler**: Binds the request body. The framework expects JSON and deserializes it into the parameter type using GSON.
 
 ```java
 @Quasar
 class CommunicationBridge {
-    @GetChart(path = "/ping")
-    public String ping(@ChartSpec("id") int id) {
+    @GetChart(path = "/ping/{id}")
+    public String ping(@ChartParam("id") int id) {
         return "Pong: " + id;
+    }
+
+    @GetChart(path = "/status")
+    public String getStatus(@ChartSpec("code") int code) {
+        return "Status Code: " + code;
     }
 
     @PostChart(path = "/message")
