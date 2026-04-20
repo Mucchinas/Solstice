@@ -2,10 +2,13 @@ package io.summertime.core;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
+import io.summertime.annotations.Constellation;
 import io.summertime.annotations.Star;
 import io.summertime.annotations.Orbit;
+import io.summertime.annotations.Starsign;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class Summertime {
@@ -38,6 +41,25 @@ public class Summertime {
                         context.put(clazz, constructor.newInstance());
                     } catch (Exception e) {
                         throw new RuntimeException("Errore creando: " + clazz.getName(), e);
+                    }
+                }
+            }
+
+            for (Object bean : new ArrayList<>(context.values())) { // Copia per evitare ConcurrentModification
+                if (bean.getClass().isAnnotationPresent(Constellation.class)) {
+                    for (Method method : bean.getClass().getDeclaredMethods()) {
+                        if (method.isAnnotationPresent(Starsign.class)) {
+                            try {
+                                method.setAccessible(true);
+
+                                Object produced = method.invoke(bean);
+
+                                context.put(method.getReturnType(), produced);
+                                System.out.println("Nuova Star prodotta dalla costellazione: " + method.getReturnType().getSimpleName());
+                            } catch (Exception e) {
+                                throw new RuntimeException("Errore nella produzione della Star", e);
+                            }
+                        }
                     }
                 }
             }
