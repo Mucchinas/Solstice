@@ -80,13 +80,16 @@ public class Charter {
             Parameter p = parameters[i];
 
             if (p.isAnnotationPresent(ChartSpec.class)) {
-                args[i] = queryParams.get(p.getAnnotation(ChartSpec.class).value());
+                String rawValue = queryParams.get(p.getAnnotation(ChartSpec.class).value());
+                if (rawValue != null) {
+                    // Utilizzo dello SpaceConverter per supportare int, boolean, etc. nell'URL
+                    args[i] = SpaceConverter.convert(p.getType(), rawValue);
+                }
             }
             else if (p.isAnnotationPresent(ChartTraveler.class)) {
                 InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
                 args[i] = gson.fromJson(reader, p.getType());
             }
-            // TODO: ChartParam
         }
         return args;
     }
