@@ -1,6 +1,6 @@
-# Solstice Framework Documentation
+# Summertime Framework Documentation
 
-Solstice is a minimalist web framework for Java 8+ designed with a celestial metaphor. It provides automated dependency injection, configuration management, and a lightweight web server.
+Summertime is a minimalist web framework for Java 8+ with an astral twist. It provides automated dependency injection, configuration management, and a lightweight web server.
 
 ## Core Architecture
 
@@ -19,7 +19,7 @@ class ScienceModule {} // Managed singleton
 
 ### Dependency Injection (Orbiting)
 
-The framework performs automated wiring of dependencies using the **@Orbit** annotation. It supports injection into both managed beans and external instances via `Solstice.inject(Object)`.
+The framework performs automated wiring of dependencies using the **@Orbit** annotation. It supports injection into both managed beans and external instances via `Summertime.inject(Object)`.
 
 - **Field Injection**: Injecting a managed bean into another.
 - **External Injection**: Injecting managed beans into instances created outside the framework.
@@ -34,7 +34,7 @@ class NavigationSystem {
 
 ### Configuration and Properties (Stardust)
 
-Solstice includes a property management system that automatically loads `solstice.properties` from the classpath.
+Summertime includes a property management system that automatically loads `summertime.properties` from the classpath.
 
 - **@Stardust**: Injects values from properties files into fields.
 - **Type Conversion**: The framework has a built-in conversion service that automatically converts string properties into primitive types (int, long, boolean, double) and their wrappers.
@@ -109,12 +109,12 @@ class CommunicationBridge {
 
 ## Technical Initialization
 
-To start the framework, invoke the `run` method from the main entry point. This method bootstraps the application and returns a `Solstice` instance, which can be used for programmatic access to beans or to shut down the application.
+To start the framework, invoke the `run` method from the main entry point. This method bootstraps the application and returns a `Summertime` instance, which can be used for programmatic access to beans or to shut down the application.
 
 ```java
 public class Application {
     public static void main(String[] args) {
-        Solstice app = Solstice.run(Application.class);
+        Summertime app = Summertime.run(Application.class);
 
         // The application is now running.
         // To stop it gracefully:
@@ -123,7 +123,7 @@ public class Application {
 }
 ```
 
-## Configuration (solstice.properties)
+## Configuration (summertime.properties)
 
 Standard configuration keys:
 - `server.port`: The port for the web server (default: 8080).
