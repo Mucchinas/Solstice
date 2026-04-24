@@ -1,5 +1,7 @@
 package io.solstice.core.routing;
 
+import io.solstice.annotations.Quasar;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +23,7 @@ public class Route {
         this.method = method;
         this.bean = bean;
         this.method.setAccessible(true);
-        this.pathPattern = compilePathTemplate(pathTemplate);
+        this.pathPattern = compilePathTemplate(bean.getClass().getAnnotation(Quasar.class).path() + pathTemplate);
     }
 
     private Pattern compilePathTemplate(String pathTemplate) {
